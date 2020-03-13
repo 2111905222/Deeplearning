@@ -20,7 +20,8 @@ from keras.utils import to_categorical
 train_labels = to_categorical(train_labels)
 test_labels = to_categorical(test_labels)
 
-network.fit(train_images, train_labels, epochs=5, batch_size=128)
+history = network.fit(train_images, train_labels, epochs=1, batch_size=128)
+print(type(history.history))
 prediction = network.predict(test_images)
 print('prediction[0]:&shape & test_label', prediction[0], prediction[0].shape, test_labels[0])
 # 同样输出10个数字的概率
