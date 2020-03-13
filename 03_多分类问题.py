@@ -31,22 +31,37 @@ model.add(layers.Dense(46, activation='softmax'))
 model.compile(optimizer='rmsprop',
               loss='binary_crossentropy',
               metrics=['accuracy'])  # 输出关注点
+# 添加正则化
+from keras import regularizers
+model_re = models.Sequential()
+model_re.add(layers.Dense(64, kernel_regularizer=regularizers.l2(0.001), activation='relu', input_shape=(10000,)))
+model_re.add(layers.Dense(64, kernel_regularizer=regularizers.l2(0.001), activation='relu'))
+model_re.add(layers.Dense(46, activation='softmax'))
+model_re.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy'])  #最后的参数需要[]
 x_val = x_train[:1000]
 partial_x_train = x_train[1000:]
 y_val = one_hot_train_labels[:1000]
 partial_y_train = one_hot_train_labels[1000:]
-history = model.fit(partial_x_train, partial_y_train, epochs=9, batch_size=512, validation_data=(x_val, y_val))
-
+history = model.fit(partial_x_train, partial_y_train, epochs=50, batch_size=512, validation_data=(x_val, y_val))
+history_re = model_re.fit(partial_x_train, partial_y_train, epochs=50, batch_size=512, validation_data=(x_val, y_val))
 # 输出图像
 import matplotlib.pyplot as plt
 history_dict = history.history
+history_re_dict = history_re.history
+
+loss_value_re = history_re_dict['loss']
+val_loss_value_re = history_re_dict['val_loss']
+
 loss_values = history_dict['loss']
 val_loss_values = history_dict['val_loss']
 acc = history_dict['accuracy']
 val_acc = history_dict['val_accuracy']
+
 epochs = range(1, len(loss_values) + 1)  # 设定1-20 ，x轴
-plt.plot(epochs, loss_values, 'bo', label='Training loss')  # x轴，y轴，bo为点
-plt.plot(epochs, val_loss_values, 'b', label='Validation loss')  # b为线
+plt.plot(epochs, loss_values, 'b*', label='original_Training loss')  # x轴，y轴，bo为点
+plt.plot(epochs, val_loss_values, 'b+', label='original_Validation loss')  # b为线
+plt.plot(epochs, loss_value_re, 'ro-', label='re_loss_value')
+plt.plot(epochs, val_loss_value_re, 'r-', label='re_validation_loss_value')
 plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend()
