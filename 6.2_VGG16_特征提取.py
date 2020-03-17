@@ -1,5 +1,6 @@
 from keras.applications import VGG16
 import matplotlib.pyplot as plt
+
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 
@@ -69,30 +70,59 @@ def extract_feature(directory, sample_count):
     return features, labels
 
 
-train_features, train_labels = extract_feature(train_dir, 2000)
-validation_features, validation_labels = extract_feature(validation_dir, 1000)
-test_features, test_labels = extract_feature(test_dir, 1000)
+# 利用冻结的卷积基端到端地训练模型
+train_datagen = ImageDataGenerator(
+    rescale=1. / 255,
+    rotation_range=40,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    fill_mode='nearest'
+)
 
-train_features = np.reshape(train_features, (2000, 4 * 4 * 512))
-validation_features = np.reshape(validation_features, (1000, 4 * 4 * 512))
-test_features = np.reshape(test_features, (1000, 4 * 4 * 512))
+test_datagen = ImageDataGenerator(
+    rescale=1. / 255  # 测试集不用数据增强
+)
+train_generator = train_datagen.flow_from_directory(
+    train_dir,
+    target_size=(150, 150),
+    batch_size=20,
+    class_mode='binary'
+)
+validation_generator = test_datagen.flow_from_directory(
+    validation_dir,
+    target_size=(150, 150),
+    batch_size=20,
+    class_mode='binary'
+)
 
+# train_features, train_labels = extract_feature(train_dir, 2000)
+# validation_features, validation_labels = extract_feature(validation_dir, 1000)
+# test_features, test_labels = extract_feature(test_dir, 1000)
+# conv_base.trainable = False  # 冻结网络（使得其权重保持不变）只用于特征提取
+# train_features = np.reshape(train_features, (2000, 4 * 4 * 512))
+# validation_features = np.reshape(validation_features, (1000, 4 * 4 * 512))
+# test_features = np.reshape(test_features, (1000, 4 * 4 * 512))
 
 from keras import models
 from keras import layers
 from keras import optimizers
 
 model = models.Sequential()
+model.add(conv_base)
+model.add(layers.Flatten())
 model.add(layers.Dense(256, activation='relu', input_dim=4 * 4 * 512))
-model.add(layers.Dropout(0.5))
 model.add(layers.Dense(1, activation='sigmoid'))
+print(model.summary())
 
 model.compile(optimizer=optimizers.RMSprop(lr=2e-5),
               loss='binary_crossentropy',
               metrics=['accuracy'])
 
-history = model.fit(train_features, train_labels, epochs=30,
-                    batch_size=20,
-                    validation_data=(validation_features, validation_labels))
+history = model.fit_generator(train_generator, steps_per_epoch=100, epochs=30,
+                              validation_data=validation_generator,
+                              validation_steps=50)
 
-data_Statistics(history, '使用VGG16的卷积基进行特征提取')
+data_Statistics(history, '数据增强并使用VGG16的卷积基进行特征提取')
