@@ -28,7 +28,19 @@ def data_Statistics(history_datapower, title):
     val_loss_values = history_dict['val_loss']
     acc = history_dict['accuracy']
     val_acc = history_dict['val_accuracy']
+    epochs = range(1, len(acc) + 1)
     plot_data(acc=acc, val_acc=val_acc, loss_values=loss_values, val_loss_values=val_loss_values, title=title)
+    return loss_values, val_loss_values, acc, val_acc, epochs
+
+def smooth_curve(points, factor=0.8):
+    smooth_points = []
+    for point in points:
+        if smooth_points:
+            previous = smooth_points[-1]
+            smooth_points.append(previous * factor + point * (1 - factor))
+        else:
+            smooth_points.append(point)
+    return smooth_points
 
 
 conv_base = VGG16(
@@ -124,5 +136,24 @@ model.compile(optimizer=optimizers.RMSprop(lr=2e-5),
 history = model.fit_generator(train_generator, steps_per_epoch=100, epochs=30,
                               validation_data=validation_generator,
                               validation_steps=50)
+conv_base.trainable = True
+set_trainable = False
+for layer in conv_base.layers:
+    if layer.name == 'block5_conv1':
+        set_trainable = True
+    if set_trainable:
+        layer.trainable = True
+    else:
+        layer.trainable = False
+loss_values, val_loss_values, acc, val_acc, epochs = data_Statistics(history, '对VGG的最后几层进行解冻微调（未平滑处理）')
 
-data_Statistics(history, '数据增强并使用VGG16的卷积基进行特征提取')
+plt.plot(epochs, smooth_curve(acc), 'bo', label='Smoothed training acc')
+plt.plot(epochs, smooth_curve(val_acc), 'b', label='Smoothed validation acc')
+plt.title('解冻后微调并平滑处理的Training and validation accuracy')
+plt.legend()
+plt.figure()
+plt.plot(epochs, smooth_curve(loss_values), 'bo', label='Smoothed training loss')
+plt.plot(epochs, smooth_curve(val_loss_values), 'b', label='Smoothed validation loss')
+plt.title('解冻后微调并平滑处理的Training and validation loss')
+plt.legend()
+plt.show()
