@@ -55,13 +55,13 @@ def extract_feature(directory, sample_count):
     generator = datagen.flow_from_directory(
         directory,
         target_size=(150, 150),
-        batch_size=batch_size,
+        batch_size=batch_size,  # 生成器一轮提取20
         class_mode='binary'
     )
     i = 0
     for inputs_batch, labels_batch in generator:
-        features_batch = conv_base.predict(inputs_batch)
-        features[i * batch_size: (i + 1) * batch_size] = features_batch
+        features_batch = conv_base.predict(inputs_batch)  # 卷积基一轮处理20张图片
+        features[i * batch_size: (i + 1) * batch_size] = features_batch  # 20张图片分批构建入features中
         labels[i * batch_size: (i + 1) * batch_size] = labels_batch
         i += 1
         if i * batch_size >= sample_count:
