@@ -1,0 +1,39 @@
+from openpyxl import load_workbook
+
+import os, shutil
+
+sum = 0
+rec = 0
+word_dict = {1: 'A', 2: 'B', 3: 'C', 4: 'D'}
+number_rec, menu = [], []
+
+try:
+    original_dataset_dir = 'C:/Users/Hasee/Desktop/神经网络第一次作业'
+    for files in os.listdir(original_dataset_dir):
+        sum += 1
+        # print(files)
+        name_part = files.split(".")[0]
+        number_rec.append(name_part[0:10])
+except FileExistsError:
+    print('empty')
+finally:
+    print(sum)
+
+wb = load_workbook('test.xlsx')
+ws = wb.active
+
+count = 0
+for row in range(1, 80):
+    ws['E' + str(row)] = '×'
+    num_on_menu = ws.cell(row=row, column=2).value
+    # print(row, '....', ws.cell(row=row, column=2).value)
+    print('first', count)
+    count = 0
+    for num_rec in number_rec:
+        count += 1
+        if int(num_rec) == int(num_on_menu):
+            rec += 1
+            ws['E' + str(row)] = '√'
+
+print(rec)
+wb.save('test.xlsx')
